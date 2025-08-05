@@ -1,78 +1,70 @@
-# Gemini Chat with Yemot HaMashiach Integration
+# Gemini Chat with Integrations
 
-This project is a web-based chat application powered by the Google Gemini API, and it includes a backend server designed for integration with the Yemot HaMashiach IVR (telephony) system.
+This project is a web-based chat application powered by the Google Gemini API, and it includes a backend server designed for integration with the Yemot HaMashiach IVR (telephony) system, Telegram, and other services.
 
 ## Features
 
 - **Web Interface**: A clean, modern chat interface for direct interaction with Gemini.
+- **Advanced Tools**: The AI can browse websites and search Twitter for real-time information.
+- **Multi-Platform**: Interact via the web, a phone call (Yemot HaMashiach), or Telegram.
 - **Chat History**: Conversations are saved locally in your browser.
-- **Yemot HaMashiach Integration**: A dedicated backend server that allows users to interact with Gemini over a phone call.
+- **Easy Configuration**: A settings panel allows you to personalize the AI's behavior and manage API keys, with direct links to required services.
 
 ## Project Structure
 
-- **Frontend (root directory)**: Contains the React-based web application (`index.html`, `App.tsx`, etc.). This part of the application runs entirely in the user's browser.
-- **Backend (`/server` directory)**: Contains a Node.js/Express server. This server has a single purpose: to provide an API endpoint for the Yemot HaMashiach system.
+- **Frontend (root directory)**: Contains the React-based web application (`index.html`, `App.tsx`, etc.).
+- **Backend (`/server` directory)**: Contains a Node.js/Express server that acts as a bridge for Yemot HaMashiach, Telegram, and provides secure proxy services for the frontend's tools.
 
 ---
 
-## Backend for Yemot HaMashiach
+## Configuration Guide
 
-The server located in the `/server` directory acts as a bridge between the Yemot HaMashiach system and the Gemini API.
+To use the full functionality, you will need several API keys. **You can find direct links to all required services in the app's Settings panel (click the ⚙️ icon).**
 
-### How it Works
+### 1. Google Gemini API Key (Required)
+- **Purpose**: The core key for the AI to function on all platforms.
+- **Where to get it**: From the **Google AI Studio**.
+- **Where to put it**: In the `server/.env` file, add the line: `API_KEY="YOUR_GEMINI_KEY_HERE"`. This key is used by the server for all integrations.
 
-1.  A user calls a number configured in your Yemot HaMashiach account.
-2.  The IVR prompts the user to type their question.
-3.  Yemot sends the user's input to the `/api/yemot` endpoint on this server.
-4.  The server takes the question, sends it to the Gemini API, and gets a response.
-5.  The server formats the response as a text-to-speech command and sends it back to Yemot.
-6.  The Yemot system reads the answer back to the user over the phone.
+### 2. Server URL (Required for Telegram)
+- **Purpose**: Your server's public web address.
+- **Where to get it**: This is the URL provided by your hosting service (e.g., Render, Heroku) after you deploy the server.
+- **Where to put it**: In the `server/.env` file, add: `SERVER_URL="https://your-deployed-server-url.com"`.
 
-### Setup and Deployment
+### 3. Telegram Bot Token (Optional)
+- **Purpose**: Connects a Telegram Bot to your AI assistant.
+- **Setup**:
+    1. **Get a Token**: Talk to the **BotFather** on Telegram to create a new bot and get its unique token.
+    2. **Add Token to Server**: In the `server/.env` file, add: `TELEGRAM_BOT_TOKEN="YOUR_TELEGRAM_BOT_TOKEN_HERE"`.
+    3. **Set Webhook**: After deploying your server, you need to tell Telegram where to send messages. Do this by visiting a special URL in your browser **only once**:
+       `https://api.telegram.org/bot<YOUR_TOKEN>/setWebhook?url=<YOUR_SERVER_URL>/api/telegram`
+       - Replace `<YOUR_TOKEN>` with your bot token.
+       - Replace `<YOUR_SERVER_URL>` with your server's public URL from step 2.
+    - You should see `{"ok":true,"result":true,"description":"Webhook was set"}`. Your bot is now ready!
 
-**1. Prerequisites**
-- Node.js (v18 or later)
-- A Google Gemini API Key.
-- A Yemot HaMashiach account.
+### 4. Twitter Bearer Token (Optional)
+- **Purpose**: Allows the AI to search for recent tweets.
+- **Where to get it**: From the **Twitter Developer Portal**.
+- **Where to put it**: Enter this key directly into the **Settings panel** in the web application.
 
-**2. Backend Configuration**
-
-- Navigate to the `server` directory: `cd server`
-- Create a `.env` file by copying the example: `cp .env.example .env`
-- Open the `.env` file and paste your Google Gemini API Key:
-  ```
-  API_KEY="YOUR_GEMINI_API_KEY_HERE"
-  ```
-- Install dependencies: `npm install`
-
-**3. Running the Server Locally**
-
-- From the `server` directory, run: `npm start`
-- The server will start, typically on port 3001. The endpoint will be `http://localhost:3001/api/yemot`.
-
-**4. Deployment**
-
-For Yemot HaMashiach to access your server, it must be deployed to a public URL (e.g., using services like Heroku, Render, or a VPS). The included `Dockerfile` can be used to containerize the application for easy deployment.
-
-- Build the Docker image: `docker build -t gemini-yemot-server .`
-- Run the container: `docker run -p 3001:3001 -e API_KEY="YOUR_GEMINI_API_KEY" gemini-yemot-server`
-
-**5. Yemot HaMashiach Configuration**
-
-In your Yemot HaMashiach account, you need to configure an extension to make an API call to your deployed server's endpoint.
-
-- Go to the desired folder in your IVR system.
-- Add the following line to your `ext.ini` file:
-  ```ini
-  type=api
-  api_url=https://your-deployed-server-url.com/api/yemot
-  api_url_post_params=prompt=${Api_To_List}
-  api_url_read_data=yes
-  ```
-- This configuration will take the user's typed input (`Api_To_List`) and send it as a `prompt` to your server. The server's response will then be read back to the user.
+### 5. Yemot HaMashiach Integration (Optional)
+- **Purpose**: Connects a phone number to your AI assistant.
+- **Setup**: In your Yemot HaMashiach account's `ext.ini` file, add:
+    ```ini
+    type=api
+    api_url=https://your-deployed-server-url.com/api/yemot
+    api_url_post_params=prompt=${Api_To_List}
+    api_url_read_data=yes
+    ```
 
 ---
 
-## Frontend Web Application
+## Backend Server Deployment
 
-The existing web application can be run locally or hosted as a static site. No changes are required for it to function, but remember that it requires the `API_KEY` to be set in its own environment during its build process.
+The server is required for the Yemot and Telegram integrations and for the web app's tools to work.
+
+1.  **Navigate to the `server` directory**: `cd server`
+2.  **Create `.env` file**: Create a file named `.env` and add your keys as described in the configuration guide.
+3.  **Install dependencies**: `npm install`
+4.  **Run locally for testing**: `npm start`
+5.  **Deploy**: Deploy the `/server` directory to a public hosting service like Render or Heroku. The included `Dockerfile` can be used for easy deployment.

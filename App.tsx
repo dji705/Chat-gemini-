@@ -1,14 +1,17 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Chat } from '@google/genai';
 import { HistoryPanel } from './components/HistoryPanel';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { ChatWindow } from './components/ChatWindow';
 import { ChatInput } from './components/ChatInput';
-import type { Message } from './types';
+import { SettingsPanel } from './components/SettingsPanel';
+import type { Message, ToolCall, Settings } from './types';
 import { Sender } from './types';
 import { startChatWithHistory, sendMessage } from './services/geminiService';
 import { useChatHistory } from './hooks/useChatHistory';
+import { useSettings } from './hooks/useSettings';
 
 const App: React.FC = () => {
     const {
@@ -21,21 +24,23 @@ const App: React.FC = () => {
         updateChat,
     } = useChatHistory();
     
+    const { settings, setSettings } = useSettings();
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [geminiChat, setGeminiChat] = useState<Chat | null>(null);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     useEffect(() => {
         if (activeChat) {
             setMessages(activeChat.messages);
-            // Recreate chat instance with history when active chat changes, excluding errors
-            const chatInstance = startChatWithHistory(activeChat.messages.filter(m => m.text && !m.isError));
+            // Recreate chat instance with history and settings when active chat or settings change
+            const chatInstance = startChatWithHistory(activeChat.messages.filter(m => !m.isError), settings);
             setGeminiChat(chatInstance);
         } else {
             setMessages([]);
             setGeminiChat(null);
         }
-    }, [activeChatId, activeChat]);
+    }, [activeChatId, activeChat, settings]);
 
     const handleSendMessage = useCallback(async (text: string) => {
         if (isLoading || !text.trim() || !geminiChat || !activeChatId) return;
@@ -58,16 +63,23 @@ const App: React.FC = () => {
         setMessages(prev => [...prev, aiMessagePlaceholder]);
         
         let fullResponse = '';
+        let currentToolCall: ToolCall | undefined = undefined;
         let errorOccurred = false;
         let finalAiText = '';
 
         try {
-            const stream = await sendMessage(geminiChat, text);
+            const stream = sendMessage(geminiChat, text, settings);
             for await (const chunk of stream) {
-                fullResponse += chunk;
+                 if (chunk.text) {
+                    fullResponse += chunk.text;
+                }
+                if (chunk.toolCall) {
+                    currentToolCall = chunk.toolCall;
+                }
+                
                 setMessages(prevMessages =>
                     prevMessages.map(msg =>
-                        msg.id === aiMessageId ? { ...msg, text: fullResponse, isError: false } : msg
+                        msg.id === aiMessageId ? { ...msg, text: fullResponse, toolCall: currentToolCall, isError: false } : msg
                     )
                 );
             }
@@ -77,7 +89,7 @@ const App: React.FC = () => {
             console.error('Error sending message to Gemini:', error);
             let errorMessage = 'אופס, משהו השתבש. אנא נסה שוב.';
              if (error && typeof error.message === 'string') {
-                if (error.message.includes('http status code: 0')) {
+                if (error.message.includes('http status code: 0') || error.message.toLowerCase().includes('failed to fetch')) {
                     errorMessage = 'שגיאת רשת. לא ניתן היה להתחבר לשרתי Gemini. אנא בדוק/בדקי את חיבור האינטרנט שלך, ואם קיימים חוסמי פרסומות או חומת אש שעלולים להפריע לתקשורת.';
                 } else if (error.message.includes('418') || error.message.toLowerCase().includes('api key not valid')) {
                     errorMessage = 'התקבלה שגיאת תצורה. ייתכן שמפתח ה-API אינו תקין או לא מתאים לשירות Gemini. אנא ודא/י שאת/ה משתמש/ת במפתח API של Google AI ושהוא הוגדר כהלכה.';
@@ -88,7 +100,7 @@ const App: React.FC = () => {
                 }
             }
             finalAiText = errorMessage;
-            setMessages(prev => prev.map(msg => msg.id === aiMessageId ? { ...msg, text: errorMessage, isError: true } : msg));
+            setMessages(prev => prev.map(msg => msg.id === aiMessageId ? { ...msg, text: errorMessage, isError: true, toolCall: undefined } : msg));
         } finally {
             setIsLoading(false);
             
@@ -96,6 +108,7 @@ const App: React.FC = () => {
                 id: aiMessageId, 
                 sender: Sender.AI, 
                 text: finalAiText,
+                toolCall: currentToolCall?.status === 'complete' ? currentToolCall : undefined, // Persist only completed tool calls
                 isError: errorOccurred
             };
             const finalMessages = [...currentMessages, finalAiMessage];
@@ -107,7 +120,7 @@ const App: React.FC = () => {
 
             updateChat(activeChatId, updatePayload);
         }
-    }, [isLoading, geminiChat, activeChatId, messages, updateChat]);
+    }, [isLoading, geminiChat, activeChatId, messages, updateChat, settings]);
 
     const handleDeleteMessage = useCallback((messageId: string) => {
         if (!activeChatId) return;
@@ -125,15 +138,21 @@ const App: React.FC = () => {
     const handleSelectChat = useCallback((id: string) => {
         selectChat(id);
     }, [selectChat]);
+    
+    const handleSaveSettings = (newSettings: Settings) => {
+        setSettings(newSettings);
+        setIsSettingsOpen(false);
+    };
 
     return (
-        <div className="flex h-screen bg-gray-900 text-slate-200 font-sans overflow-hidden">
+        <div className="flex h-screen bg-slate-100 text-slate-800 font-sans overflow-hidden">
             <HistoryPanel
                 history={chatHistory}
                 activeChatId={activeChatId}
                 onNewChat={handleNewChat}
                 onSelectChat={handleSelectChat}
                 onDeleteChat={deleteChat}
+                onOpenSettings={() => setIsSettingsOpen(true)}
             />
             <main className="flex-1 flex flex-col h-screen relative">
                 <div className="flex-1 w-full max-w-4xl mx-auto overflow-y-auto">
@@ -145,6 +164,13 @@ const App: React.FC = () => {
                 </div>
                 <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
             </main>
+            {isSettingsOpen && (
+                <SettingsPanel 
+                    currentSettings={settings}
+                    onSave={handleSaveSettings}
+                    onClose={() => setIsSettingsOpen(false)}
+                />
+            )}
         </div>
     );
 };

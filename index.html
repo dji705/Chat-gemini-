@@ -11,28 +11,28 @@
         width: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #1f2937; /* gray-800 */
+        background: #f1f5f9; /* slate-100 */
       }
       ::-webkit-scrollbar-thumb {
-        background: #4b5563; /* gray-600 */
+        background: #cbd5e1; /* slate-300 */
         border-radius: 10px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #6b7280; /* gray-500 */
+        background: #94a3b8; /* slate-400 */
       }
 
-      /* Custom styles for rendered markdown */
-      .prose { color: #d1d5db; }
-      .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 { color: #f9fafb; font-weight: 600; margin-top: 1.25em; margin-bottom: 0.5em; }
+      /* Custom styles for rendered markdown on light background */
+      .prose { color: #334155; }
+      .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 { color: #1e293b; font-weight: 600; margin-top: 1.25em; margin-bottom: 0.5em; }
       .prose p { margin-top: 0.75em; margin-bottom: 0.75em; }
-      .prose a { color: #60a5fa; text-decoration: none; }
+      .prose a { color: #2563eb; text-decoration: none; }
       .prose a:hover { text-decoration: underline; }
       .prose ul, .prose ol { margin-top: 1em; margin-bottom: 1em; padding-right: 1.75em; }
       .prose li { margin-top: 0.25em; margin-bottom: 0.25em; }
       .prose ul { list-style-type: disc; }
       .prose ol { list-style-type: decimal; }
-      .prose blockquote { border-right: 4px solid #4b5563; padding-right: 1em; margin-right: 0; font-style: italic; color: #9ca3af; }
-      .prose code { background-color: #374151; color: #f3f4f6; padding: 0.2em 0.4em; border-radius: 0.25rem; font-size: 0.9em; }
+      .prose blockquote { border-right: 4px solid #cbd5e1; padding-right: 1em; margin-right: 0; font-style: italic; color: #64748b; }
+      .prose code { background-color: #e2e8f0; color: #334155; padding: 0.2em 0.4em; border-radius: 0.25rem; font-size: 0.9em; }
       .prose pre { margin: 0; }
       .prose pre code { background: none; padding: 0; font-size: 1em; color: inherit; }
     </style>
@@ -46,8 +46,7 @@
     "react-markdown": "https://esm.sh/react-markdown@^9.0.1",
     "remark-gfm": "https://esm.sh/remark-gfm@^4.0.0",
     "react-syntax-highlighter": "https://esm.sh/react-syntax-highlighter@15.5.0",
-    "react-syntax-highlighter/dist/esm/styles/prism/one-dark": "https://esm.sh/react-syntax-highlighter@15.5.0/dist/esm/styles/prism/one-dark.js",
-    "react-syntax-highlighter/": "https://esm.sh/react-syntax-highlighter@^15.6.1/",
+    "react-syntax-highlighter/": "https://esm.sh/react-syntax-highlighter@15.5.0/",
     "dotenv": "https://esm.sh/dotenv@^17.2.1",
     "express": "https://esm.sh/express@^5.1.0",
     "cors": "https://esm.sh/cors@^2.8.5",
@@ -57,7 +56,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-gray-900 text-slate-100">
+  <body class="bg-slate-100 text-slate-800">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
