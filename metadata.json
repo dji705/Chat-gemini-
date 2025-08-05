@@ -1,0 +1,6 @@
+{
+  "name": "צ'אט Gemini",
+  "description": "אפליקציית צ'אט אינטליגנטית המופעלת על ידי Gemini API. שוחח עם הבינה המלאכותית על כל נושא.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
